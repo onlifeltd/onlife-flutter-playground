@@ -1,0 +1,74 @@
+workflows:
+
+  release-ios-workflow-template: &release-ios-workflow-template
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: onlifeinc-appstore
+    environment: &common_ios_environment
+      vars:
+        ENV: dev
+      flutter: 3.19.5
+      xcode: latest
+      cocoapods: default
+      groups:
+        - onlife_playground
+        - onlife_ios_code_signing
+    scripts:
+      - &setup_environment
+        name: Setup Environment
+        script: |
+          ./bin/setup_ci
+      - &setup_keychain
+        name: Set up keychain and fetch signing files
+        script: |
+          PRODUCT_BUNDLE_IDENTIFIER=$APPLE_APPSTORE_BUNDLE_ID
+          keychain initialize
+          echo "Fetching signing files for $PRODUCT_BUNDLE_IDENTIFIER"
+          app-store-connect fetch-signing-files "$PRODUCT_BUNDLE_IDENTIFIER" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+      - &setup_code_signing
+        name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles --archive-method=app-store
+      - &flutter_build_ipa
+        name: iOS - Flutter build ipa and automatic versioning
+        script: |
+          APP_VERSION=$(cat pubspec.yaml | grep "version:" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          APP_ID=$APPLE_APPSTORE_APP_ID
+          PRODUCT_BUNDLE_IDENTIFIER=$APPLE_APPSTORE_BUNDLE_ID
+          echo BUILD_NUMBER for $PRODUCT_BUNDLE_IDENTIFIER, $APP_ID of version $APP_VERSION is $PROJECT_BUILD_NUMBER
+          flutter build ipa --release --dart-define-from-file=.env \
+            --build-number=$PROJECT_BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+      - build/**/outputs/**/mapping.txt
+      - build/ios/archive/Runner.xcarchive/dSYMs
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  deploy-ios-testflight-playground:
+    name: Release iOS app to onlife-playground
+    working_directory: app
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+          source: true
+      cancel_previous_builds: true
+    environment:
+      <<: *common_ios_environment
+      groups:
+        - onlife_playground
+        - onlife_ios_code_signing        
+    <<: *release-ios-workflow-template
+

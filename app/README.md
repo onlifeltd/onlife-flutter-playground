@@ -4,25 +4,27 @@ Onlife Playground
 
 ## Getting Started
 
-Add Mapbox key to config.json
+Add Mapbox key to .env
 
-```json
-{
-  "MAPBOX_ACCESS_TOKEN": "key here"
-}
+```
+MAPBOX_ACCESS_TOKEN="key here"
 ```
 
 Got "Run -> Edit Configurations -> Additional run args", and following 
 
 ```
---dart-define-from-file=config.json
+--dart-define-from-file=.env
 ```
 
 
-Add Github personal access token to .netrc
+Add Mapbox SDK download token and Github personal access token to .netrc
 
 ```
+machine api.mapbox.com
+login mapbox
+password <mapbox token>
+
 machine api.github.com
 login <username>
-password <token>
+password <github token>
 ```

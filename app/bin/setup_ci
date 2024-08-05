@@ -1,0 +1,17 @@
+#!/bin/bash
+
+tee -a ${HOME}/.netrc << END
+machine api.mapbox.com
+login mapbox
+password ${VAULT_mapbox_api_token}
+
+machine github.com
+login ${VAULT_github_user}
+password ${VAULT_github_access_token}
+END
+chmod 0600 ${HOME}/.netrc
+
+tee -a ./.env << END
+MAPBOX_ACCESS_TOKEN=${VAULT_mapbox_map_token}
+END
+
