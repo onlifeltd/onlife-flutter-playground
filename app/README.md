@@ -1,16 +1,28 @@
 # app
 
-A new Flutter project.
+Onlife Playground
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+Add Mapbox key to config.json
 
-A few resources to get you started if this is your first Flutter project:
+```json
+{
+  "MAPBOX_ACCESS_TOKEN": "key here"
+}
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Got "Run -> Edit Configurations -> Additional run args", and following 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```
+--dart-define-from-file=config.json
+```
+
+
+Add Github personal access token to .netrc
+
+```
+machine api.github.com
+login <username>
+password <token>
+```
