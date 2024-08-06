@@ -62,6 +62,8 @@ workflows:
         - push
       branch_patterns:
         - pattern: 'main'
+          include: true
+          source: true
       cancel_previous_builds: true
     environment:
       <<: *common_ios_environment
