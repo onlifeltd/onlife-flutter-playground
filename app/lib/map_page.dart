@@ -3,7 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:onlife_map_view/onlife_map.dart';
 
-const melbourne = Position(-37.81410937028515, 144.9633945897505);
+const melbourne = Position(-37.810107889595514, 144.96966113831883);
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -32,7 +32,7 @@ class _MapPageState extends State<MapPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           cameraOption = MapCameraCenter(
-            center: currentLocation,
+            center: melbourne,
             zoom: 14.0,
           );
           setState(() {});
@@ -53,6 +53,11 @@ class _MapPageState extends State<MapPage> {
             poiLayers: [
               OnlifeMapPoiLayer(
                 'coffeeShops',
+                clusterOption: const OnlifeMapPoiClusterOption(
+                  radius: 40,
+                  maxZoom: 15,
+                  minZoom: 10,
+                ),
                 pois: coffeeShopLocation
                     .mapIndexed((index, e) => OnlifeMapPoi(
                           id: 'coffeeShop$index',
@@ -67,6 +72,7 @@ class _MapPageState extends State<MapPage> {
                   OnlifeMapPoi(
                     id: 'myPlace',
                     position: currentLocation,
+                    anchorPoint: OnlifeMapPoiAnchorPoint.top,
                   ),
                 ],
               ),
@@ -74,6 +80,7 @@ class _MapPageState extends State<MapPage> {
             poiBuilder: (poiData) {
               if (poiData.layerId == 'myPlacePois') {
                 return Container(
+                  key: Key(poiData.id),
                   height: 40,
                   width: 40,
                   decoration: const BoxDecoration(
@@ -85,8 +92,8 @@ class _MapPageState extends State<MapPage> {
                     color: Colors.white,
                   ),
                 );
-              } else if (poiData.layerId == 'coffeeShops') {
-                return CoffeeShopPoi(focused: poiData.focused);
+              } else if (poiData.layerId == 'coffeeShops' && !poiData.isCluster) {
+                return CoffeeShopPoi(key: Key(poiData.id), focused: poiData.focused);
               }
               return null;
             },
@@ -103,7 +110,7 @@ class _MapPageState extends State<MapPage> {
                     cameraOption = MapCameraCenter(
                       center: coffeeShopLocation[selected!],
                       zoom: 14.0,
-                      durationInMilliseconds: 1000,
+                      durationInMilliseconds: 500,
                     );
                   }
                   setState(() {});
