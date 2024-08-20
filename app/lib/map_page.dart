@@ -1,9 +1,14 @@
-import 'package:app/coffee_shop_poi.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:onlife_map_view/onlife_map.dart';
+import 'package:onlife_map_view/widget/onlife_map_poi_layer.dart';
 
-const melbourne = Position(-37.810107889595514, 144.96966113831883);
+import 'model/poi_data.dart';
+import 'state/poi_provider.dart';
+import 'widget/map_my_place.dart';
+import 'widget/map_poi.dart';
+import 'widget/map_poi_cluster.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -19,12 +24,7 @@ class _MapPageState extends State<MapPage> {
   );
 
   var currentLocation = melbourne;
-  var coffeeShopLocation = [
-    const Position(-37.813884259248766, 144.96599704001218),
-    const Position(-37.81100241411018, 144.96436625695327),
-    const Position(-37.81768134226083, 144.968014061164),
-  ];
-  int? selected;
+  String? selectedPoiId;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +34,7 @@ class _MapPageState extends State<MapPage> {
           cameraOption = MapCameraCenter(
             center: melbourne,
             zoom: 14.0,
+            bearing: 0,
           );
           setState(() {});
         },
@@ -41,81 +42,111 @@ class _MapPageState extends State<MapPage> {
       ),
       body: Stack(
         children: [
-          OnlifeMapView(
-            mapOptions: const OnlifeMapOptions(
-              mapStyle: 'mapbox://styles/obattaglet/clq4k9p5400nf01r7cno145gi',
-              defaultMapCenter: melbourne,
-            ),
-            mapCameraOptions: cameraOption,
-            onLocationChange: (position) {
-              currentLocation = position;
-            },
-            poiLayers: [
-              OnlifeMapPoiLayer(
-                'coffeeShops',
-                clusterOption: const OnlifeMapPoiClusterOption(
-                  radius: 40,
-                  maxZoom: 15,
-                  minZoom: 10,
+          Consumer(
+            builder: (context, ref, child) {
+              final coffeeShopLocation = ref.watch(poiProvider).value;
+              return OnlifeMapView(
+                mapOptions: const OnlifeMapOptions(
+                  mapStyle: 'mapbox://styles/obattaglet/clq4k9p5400nf01r7cno145gi',
+                  defaultMapCenter: melbourne,
+                  enableClusteringAnimation: true,
                 ),
-                pois: coffeeShopLocation
-                    .mapIndexed((index, e) => OnlifeMapPoi(
-                          id: 'coffeeShop$index',
-                          position: e,
-                          focused: index == selected,
-                        ))
-                    .toList(),
-              ),
-              OnlifeMapPoiLayer(
-                'myPlacePois',
-                pois: [
-                  OnlifeMapPoi(
-                    id: 'myPlace',
-                    position: currentLocation,
-                    anchorPoint: OnlifeMapPoiAnchorPoint.top,
+                mapCameraOptions: cameraOption,
+                onLocationChange: (position) {
+                  currentLocation = position;
+                },
+                poiLayers: [
+                  OnlifeMapPoiLayer(
+                    'coffeeShops',
+                    clusterOption: const OnlifeMapPoiClusterOption(
+                      radius: 40,
+                      maxZoom: 15,
+                      minZoom: 10,
+                    ),
+                    pois: coffeeShopLocation
+                            ?.mapIndexed((index, e) => OnlifeMapPoi(
+                                  id: 'coffeeShop$index',
+                                  position: e.location,
+                                  focused: 'coffeeShop$index' == selectedPoiId,
+                                  data: e,
+                                ))
+                            .toList() ??
+                        [],
+                  ),
+                  OnlifeMapPoiLayer(
+                    'myPlacePois',
+                    pois: [
+                      OnlifeMapPoi(
+                        id: 'myPlace',
+                        position: currentLocation,
+                        anchorPoint: OnlifeMapPoiAnchorPoint.center,
+                      ),
+                    ],
                   ),
                 ],
-              ),
-            ],
-            poiBuilder: (poiData) {
-              if (poiData.layerId == 'myPlacePois') {
-                return Container(
-                  key: Key(poiData.id),
-                  height: 40,
-                  width: 40,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.pets_outlined,
-                    color: Colors.white,
-                  ),
-                );
-              } else if (poiData.layerId == 'coffeeShops' && !poiData.isCluster) {
-                return CoffeeShopPoi(key: Key(poiData.id), focused: poiData.focused);
-              }
-              return null;
-            },
-            onPoiTap: (layerId, poiId) {
-              if (layerId == 'coffeeShops') {
-                int? newSelected = int.parse(poiId.replaceAll('coffeeShop', ''));
-                if (newSelected == selected) {
-                  newSelected = null;
-                }
-
-                if (newSelected != selected) {
-                  selected = newSelected;
-                  if (selected != null) {
-                    cameraOption = MapCameraCenter(
-                      center: coffeeShopLocation[selected!],
-                      zoom: 14.0,
-                      durationInMilliseconds: 500,
-                    );
+                poiBuilder: (poiData) {
+                  if (poiData.layerId == 'myPlacePois') {
+                    return MapMyPlaceWidget(key: Key(poiData.id), poiData);
+                  } else if (poiData.layerId == 'coffeeShops') {
+                    if (!poiData.isCluster) {
+                      return MapPoi(
+                        key: Key(poiData.id),
+                        poiData: poiData.onlifeMapPoi?.data as PoiData,
+                        focused: poiData.focused,
+                      );
+                    } else {
+                      return MapPoiClusterWidget(key: Key(poiData.id), poiData);
+                    }
                   }
-                  setState(() {});
-                }
-              }
+                  return null;
+                },
+                poiSizeBuilder: (_) => const Size(30, 30),
+                onPoiTap: (layerId, poiId, {data}) {
+                  final poiData = data as OnlifeMapPoiWidgetData;
+                  String? newSelected = poiId;
+
+                  if (data.poiId == selectedPoiId) {
+                    newSelected = null;
+                  }
+
+                  if (newSelected != selectedPoiId) {
+                    selectedPoiId = newSelected;
+                  }
+
+                  print('onPoiTap: $data');
+
+                  if (layerId == 'coffeeShops') {
+                    if (!poiData.isCluster) {
+                      final index = int.tryParse(poiId.substring('coffeeShop'.length));
+
+                      print('index: $index');
+                      print('selectedPoiId: $selectedPoiId');
+
+                      if (coffeeShopLocation != null &&
+                          index != null &&
+                          index >= 0 &&
+                          index < coffeeShopLocation.length) {
+                        cameraOption = MapCameraCenter(
+                          center: coffeeShopLocation[index].location,
+                          zoom: 14.0,
+                          durationInMilliseconds: 500,
+                        );
+                      } else {
+                        selectedPoiId = null;
+                      }
+                    } else {
+                      cameraOption = MapCameraCenter(
+                        center: poiData.mapPosition,
+                        zoom: 14.0,
+                        durationInMilliseconds: 500,
+                      );
+                    }
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }
+                },
+              );
             },
           ),
         ],

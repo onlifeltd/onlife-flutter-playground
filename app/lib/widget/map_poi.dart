@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
-class CoffeeShopPoi extends StatefulWidget {
-  const CoffeeShopPoi({super.key, this.focused = false});
+import '../model/poi_data.dart';
 
+class MapPoi extends StatefulWidget {
+  const MapPoi({super.key, this.focused = false, required this.poiData});
+
+  final PoiData poiData;
   final bool focused;
 
   @override
-  State<CoffeeShopPoi> createState() => _CoffeeShopPoiState();
+  State<MapPoi> createState() => _MapPoiState();
 }
 
-class _CoffeeShopPoiState extends State<CoffeeShopPoi> {
+class _MapPoiState extends State<MapPoi> {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
@@ -17,9 +20,14 @@ class _CoffeeShopPoiState extends State<CoffeeShopPoi> {
       clipBehavior: Clip.hardEdge,
       height: 40,
       width: widget.focused ? 80 : 40,
-      decoration: const BoxDecoration(
-        color: Colors.blue,
-        borderRadius: BorderRadius.all(Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: switch (widget.poiData.type) {
+          PoiType.shop => Colors.green,
+          PoiType.restaurant => Colors.red,
+          PoiType.bar => Colors.orange,
+          _ => Colors.blue,
+        },
+        borderRadius: const BorderRadius.all(Radius.circular(20)),
       ),
       child: OverflowBox(
         maxWidth: 80,
@@ -32,8 +40,14 @@ class _CoffeeShopPoiState extends State<CoffeeShopPoi> {
               height: 40,
               width: 40,
               alignment: Alignment.center,
-              child: const Icon(
-                Icons.coffee,
+              child: Icon(
+                switch (widget.poiData.type) {
+                  PoiType.shop => Icons.local_mall,
+                  PoiType.restaurant => Icons.restaurant,
+                  PoiType.bar => Icons.local_bar,
+                  _ => Icons.coffee,
+                },
+                // Icons.coffee,
                 color: Colors.white,
               ),
             ),
