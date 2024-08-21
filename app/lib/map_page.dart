@@ -117,8 +117,6 @@ class _MapPageState extends State<MapPage> {
                     selectedPoiId = newSelected;
                   }
 
-                  print('selectedPoiId: $selectedPoiId');
-
                   if (layerId == 'coffeeShops') {
                     if (!poiData.isCluster) {
                       final index = int.tryParse(poiId.substring('coffeeShop'.length));

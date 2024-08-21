@@ -34,25 +34,6 @@ class MapPoiClusterWidget extends StatelessWidget {
             )
           : NumberCircleWidget(data.poiCount),
     );
-
-    if (focused) {
-      return Container(
-          padding: const EdgeInsets.all(2),
-          decoration: const BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.all(Radius.circular(22)),
-          ),
-          child: Row(
-            children: [
-              ...data.pois.map((e) => MapPoi(
-                    // key: Key(e.id),
-                    poiData: e.data as PoiData,
-                  ))
-            ],
-          ));
-    }
-
-    return NumberCircleWidget(data.poiCount);
   }
 }
 
