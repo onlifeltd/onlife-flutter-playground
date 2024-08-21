@@ -95,7 +95,11 @@ class _MapPageState extends State<MapPage> {
                         focused: poiData.focused,
                       );
                     } else {
-                      return MapPoiClusterWidget(key: Key(poiData.id), poiData);
+                      return MapPoiClusterWidget(
+                        key: Key(poiData.id),
+                        poiData,
+                        focused: poiData.poiId == selectedPoiId,
+                      );
                     }
                   }
                   return null;
@@ -113,14 +117,11 @@ class _MapPageState extends State<MapPage> {
                     selectedPoiId = newSelected;
                   }
 
-                  print('onPoiTap: $data');
+                  print('selectedPoiId: $selectedPoiId');
 
                   if (layerId == 'coffeeShops') {
                     if (!poiData.isCluster) {
                       final index = int.tryParse(poiId.substring('coffeeShop'.length));
-
-                      print('index: $index');
-                      print('selectedPoiId: $selectedPoiId');
 
                       if (coffeeShopLocation != null &&
                           index != null &&
